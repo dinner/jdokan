@@ -29,11 +29,12 @@ jclass dokanDokanOperationsClass = NULL;
 jclass byHandleFileInfoClass = NULL;
 jclass dokanDiskFreeSpaceClass = NULL;
 jclass dokanOperationExceptionClass = NULL;
-//jclass dokanFileInfoClass = NULL;
+jclass dokanFileInfoClass = NULL;
 jclass dokanVolumeInfoClass = NULL;
 jclass win32FindDataClass = NULL;
 
 jfieldID mountPointID = NULL;
+jfieldID metaFilePathID = NULL;
 //jfieldID driveLetterID = NULL;
 jfieldID threadCountID = NULL;
 jfieldID optionsModeID = NULL;
@@ -48,6 +49,10 @@ jfieldID volumeSerialNumberID = NULL;
 jfieldID maximumComponentLengthID = NULL;
 jfieldID fileSystemFlagsID = NULL;
 jfieldID fileSystemNameID = NULL;
+
+jfieldID handle = NULL;
+jfieldID processId = NULL;
+jfieldID dokanContext = NULL;
 
 jfieldID Win32FindData_fileAttributesID = NULL;
 jfieldID Win32FindData_creationTimeID = NULL;
@@ -145,11 +150,12 @@ void InitMethodIDs(JNIEnv *env) throw(...)
 	LOG(L"[InitMethodIDs] 1\n");
 
 	// DokanFileInfo
-	/*
 	dokanFileInfoClass = env->FindClass("net/decasdev/dokan/DokanFileInfo");
 	if(dokanFileInfoClass == NULL)
 		throw "Cannot find net.decasdev.dokan.DokanFileInfo class";
-	*/
+	handle = env->GetFieldID(dokanFileInfoClass, "handle", "J");
+	processId = env->GetFieldID(dokanFileInfoClass, "processId", "I");
+	dokanContext = env->GetFieldID(dokanFileInfoClass, "dokanContext", "J");
 	// DokanFileInfo.<init>
 	/*
 	dokanFileInfoConstID = env->GetMethodID(dokanFileInfoClass, "<init>", "(JIZ)V");
@@ -322,6 +328,10 @@ void InitMethodIDs(JNIEnv *env) throw(...)
 	mountPointID = env->GetFieldID(dokanOptionsClass, "mountPoint", "Ljava/lang/String;");
 	if(mountPointID == NULL)
 		throw "Cannot find field mountPoint at DokanOperations class";
+	if (mountPointID == NULL)
+		throw "Cannot find field mountPoint at DokanOperations class";
+	metaFilePathID = env->GetFieldID(dokanOptionsClass, "metaFilePath", "Ljava/lang/String;");
+	
 
 	// DokanOptions.threadCount
 	threadCountID = env->GetFieldID(dokanOptionsClass, "threadCount", "I");

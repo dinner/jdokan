@@ -48,6 +48,7 @@ public class Dokan {
 	
 	public static native boolean removeMountPoint(String mountPoint);
 
+	public static native boolean resetTimeout(long timeout,DokanFileInfo fileInfo);
 	/**
 	 * Check whether Name can match Expression. Expression can contain wildcard characters (? and *)
 	 */

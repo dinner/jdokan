@@ -20,7 +20,7 @@ with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #include "stdafx.h"
 #include "net_decasdev_dokan_Dokan.h"
-#include "..\..\dokan\dokan.h"
+#include "..\..\dokany\dokan\dokan.h"
 #include "JDokanDLL.h"
 #include "Utils.h"
 #include "IDs.h"
@@ -92,15 +92,20 @@ jobject ToDokanFileInfoJavaObject(JNIEnv* env, PDOKAN_FILE_INFO DokanFileInfo) t
 	if (clz == NULL) 
 		return NULL;
 	
-	jmethodID mid = env->GetMethodID(clz, "<init>", "(JIZ)V");
+	jmethodID mid = env->GetMethodID(clz, "<init>", "(JIZJZZZZ)V");
 	if (mid == NULL) 
 		return NULL;
-	
 	jobject jdokanFileInfo = env->NewObject(
 		clz, mid,
 		DokanFileInfo->Context,
 		DokanFileInfo->ProcessId,
-		DokanFileInfo->IsDirectory);
+		DokanFileInfo->IsDirectory,
+		DokanFileInfo->DokanContext,
+		DokanFileInfo->DeleteOnClose,
+		DokanFileInfo->WriteToEndOfFile,
+		DokanFileInfo->SynchronousIo,
+		DokanFileInfo->Nocache
+		);
 	if (jdokanFileInfo == NULL)
 		throw "Failed at NewObject for DokanFileInfo";
 	

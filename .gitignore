@@ -10,3 +10,9 @@
 *.iml
 target
 .DS_Store
+DLL/ipch/*
+DLL/Release/*
+DLL/x64/*
+DLL/Release/*
+DLL/Release/JDokan.Build.CppClean.log
+*.log

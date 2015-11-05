@@ -21,16 +21,27 @@ with this program. If not, see <http://www.gnu.org/licenses/>.
 package net.decasdev.dokan;
 
 public class DokanFileInfo {
+	public long dokanContext;
 	public long handle;
 	/** process id for the thread that originally requested a given I/O operation */
 	public int processId;
 	/** requesting a directory file */
 	public boolean isDirectory;
+	public boolean deleteOnClose;
+	public boolean writeToEndOfFile;
+	public boolean synchronousIo;
+	public boolean noCache;
 
-	public DokanFileInfo(long handle, int processId, boolean isDirectory) {
+	public DokanFileInfo(long handle, int processId, boolean isDirectory,long dokanContext,boolean deleteOnClose, boolean writeToEndOfFile,boolean synchronousIo,boolean noCache) {
 		this.handle = handle;
 		this.processId = processId;
 		this.isDirectory = isDirectory;
+		this.dokanContext = dokanContext;
+		this.deleteOnClose = deleteOnClose;
+		this.writeToEndOfFile = writeToEndOfFile;
+		this.synchronousIo = synchronousIo;
+		this.noCache = noCache;
+		
 	}
 
 	@Override public String toString() {

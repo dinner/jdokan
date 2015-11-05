@@ -86,7 +86,9 @@ JNIEXPORT jint JNICALL Java_net_decasdev_dokan_Dokan_getVersion
  */
 JNIEXPORT jint JNICALL Java_net_decasdev_dokan_Dokan_getDriverVersion
   (JNIEnv *, jclass);
-
+JNIEXPORT jboolean JNICALL Java_net_decasdev_dokan_Dokan_resetTimeout(JNIEnv *env,jclass,
+	jlong,	// timeout in millisecond
+	jobject);
 #ifdef __cplusplus
 }
 #endif

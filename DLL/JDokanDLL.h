@@ -19,10 +19,17 @@ with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
 #pragma once
-
+#define WIN32_NO_STATUS
+#include <windows.h>
+#undef WIN32_NO_STATUS
+#include <winbase.h>
+#include <ntstatus.h>
+typedef LONG NTSTATUS;
 void InitMethodIDs(JNIEnv *env);
 
-int DOKAN_CALLBACK OnCreateFile(
+static WCHAR RootDirectory[MAX_PATH] = L"C:";
+
+NTSTATUS DOKAN_CALLBACK OnCreateFile(
 		LPCWSTR,      // FileName
 		DWORD,        // DesiredAccess
 		DWORD,        // ShareMode
@@ -31,23 +38,40 @@ int DOKAN_CALLBACK OnCreateFile(
 		//HANDLE,       // TemplateFile
 		PDOKAN_FILE_INFO);
 
-int DOKAN_CALLBACK OnOpenDirectory(
+NTSTATUS DOKAN_CALLBACK OnOpenDirectory(
 	LPCWSTR,				// FileName
 	PDOKAN_FILE_INFO);
 
-int DOKAN_CALLBACK OnCreateDirectory(
+NTSTATUS DOKAN_CALLBACK OnCreateDirectory(
 	LPCWSTR,				// FileName
 	PDOKAN_FILE_INFO);
 
-int DOKAN_CALLBACK OnCleanup(
+void DOKAN_CALLBACK OnCleanup(
 	LPCWSTR,      // FileName
 	PDOKAN_FILE_INFO);
 
-int DOKAN_CALLBACK OnCloseFile(
+void DOKAN_CALLBACK OnCloseFile(
 	LPCWSTR,      // FileName
 	PDOKAN_FILE_INFO);
 
-int DOKAN_CALLBACK OnReadFile(
+NTSTATUS DOKAN_CALLBACK
+onGetFileSecurity(
+LPCWSTR					FileName,
+PSECURITY_INFORMATION	SecurityInformation,
+PSECURITY_DESCRIPTOR	SecurityDescriptor,
+ULONG				BufferLength,
+PULONG				LengthNeeded,
+PDOKAN_FILE_INFO	DokanFileInfo);
+
+NTSTATUS DOKAN_CALLBACK
+onSetFileSecurity(
+LPCWSTR					FileName,
+PSECURITY_INFORMATION	SecurityInformation,
+PSECURITY_DESCRIPTOR	SecurityDescriptor,
+ULONG				SecurityDescriptorLength,
+PDOKAN_FILE_INFO	DokanFileInfo);
+
+NTSTATUS DOKAN_CALLBACK OnReadFile(
 	LPCWSTR,  // FileName
 	LPVOID,   // Buffer
 	DWORD,    // NumberOfBytesToRead
@@ -56,7 +80,7 @@ int DOKAN_CALLBACK OnReadFile(
 	PDOKAN_FILE_INFO);
 
 
-int DOKAN_CALLBACK OnWriteFile(
+NTSTATUS DOKAN_CALLBACK OnWriteFile(
 	LPCWSTR,  // FileName
 	LPCVOID,  // Buffer
 	DWORD,    // NumberOfBytesToWrite
@@ -65,75 +89,75 @@ int DOKAN_CALLBACK OnWriteFile(
 	PDOKAN_FILE_INFO);
 
 
-int DOKAN_CALLBACK OnFlushFileBuffers(
+NTSTATUS DOKAN_CALLBACK OnFlushFileBuffers(
 	LPCWSTR, // FileName
 	PDOKAN_FILE_INFO);
 
 
-int DOKAN_CALLBACK OnGetFileInformation(
+NTSTATUS DOKAN_CALLBACK OnGetFileInformation(
 	LPCWSTR,          // FileName
 	LPBY_HANDLE_FILE_INFORMATION, // Buffer
 	PDOKAN_FILE_INFO);
 
 
-int DOKAN_CALLBACK OnFindFiles(
+NTSTATUS DOKAN_CALLBACK OnFindFiles(
 	LPCWSTR,			// PathName
 	PFillFindData,		// call this function with PWIN32_FIND_DATAW
 	PDOKAN_FILE_INFO);  //  (see PFillFindData definition)
 
 
 // You should implement either FindFires or FindFilesWithPattern
-int DOKAN_CALLBACK OnFindFilesWithPattern(
+NTSTATUS DOKAN_CALLBACK OnFindFilesWithPattern(
 	LPCWSTR,			// PathName
 	LPCWSTR,			// SearchPattern
 	PFillFindData,		// call this function with PWIN32_FIND_DATAW
 	PDOKAN_FILE_INFO);
 
 
-int DOKAN_CALLBACK OnSetFileAttributes(
+NTSTATUS DOKAN_CALLBACK OnSetFileAttributes(
 	LPCWSTR, // FileName
 	DWORD,   // FileAttributes
 	PDOKAN_FILE_INFO);
 
 
-int DOKAN_CALLBACK OnSetFileTime(
+NTSTATUS DOKAN_CALLBACK OnSetFileTime(
 	LPCWSTR,		// FileName
 	CONST FILETIME*, // CreationTime
 	CONST FILETIME*, // LastAccessTime
 	CONST FILETIME*, // LastWriteTime
 	PDOKAN_FILE_INFO);
 
-int DOKAN_CALLBACK OnDeleteFile(
+NTSTATUS DOKAN_CALLBACK OnDeleteFile(
 	LPCWSTR, // FileName
 	PDOKAN_FILE_INFO);
 
 
-int DOKAN_CALLBACK OnDeleteDirectory( 
+NTSTATUS DOKAN_CALLBACK OnDeleteDirectory(
 	LPCWSTR, // FileName
 	PDOKAN_FILE_INFO);
 
 
-int DOKAN_CALLBACK OnMoveFile(
+NTSTATUS DOKAN_CALLBACK OnMoveFile(
 	LPCWSTR, // ExistingFileName
 	LPCWSTR, // NewFileName
 	BOOL,	// ReplaceExisiting
 	PDOKAN_FILE_INFO);
 
 
-int DOKAN_CALLBACK OnSetEndOfFile(
+NTSTATUS DOKAN_CALLBACK OnSetEndOfFile(
 	LPCWSTR,  // FileName
 	LONGLONG, // Length
 	PDOKAN_FILE_INFO);
 
 
-int DOKAN_CALLBACK OnLockFile(
+NTSTATUS DOKAN_CALLBACK OnLockFile(
 	LPCWSTR, // FileName
 	LONGLONG, // ByteOffset
 	LONGLONG, // Length
 	PDOKAN_FILE_INFO);
 
 
-int DOKAN_CALLBACK OnUnlockFile(
+NTSTATUS DOKAN_CALLBACK OnUnlockFile(
 	LPCWSTR, // FileName
 	LONGLONG,// ByteOffset
 	LONGLONG,// Length
@@ -146,7 +170,7 @@ int DOKAN_CALLBACK OnUnlockFile(
 // (ditto CloseFile and Cleanup)
 
 // see Win32 API GetDiskFreeSpaceEx
-int DOKAN_CALLBACK OnGetDiskFreeSpace(
+NTSTATUS DOKAN_CALLBACK OnGetDiskFreeSpace(
 	PULONGLONG, // FreeBytesAvailable
 	PULONGLONG, // TotalNumberOfBytes
 	PULONGLONG, // TotalNumberOfFreeBytes
@@ -154,7 +178,7 @@ int DOKAN_CALLBACK OnGetDiskFreeSpace(
 
 
 // see Win32 API GetVolumeInformation
-int DOKAN_CALLBACK OnGetVolumeInformation(
+NTSTATUS DOKAN_CALLBACK OnGetVolumeInformation(
 	LPWSTR, // VolumeNameBuffer
 	DWORD,	// VolumeNameSize
 	LPDWORD,// VolumeSerialNumber
@@ -165,7 +189,7 @@ int DOKAN_CALLBACK OnGetVolumeInformation(
 	PDOKAN_FILE_INFO);
 
 
-int DOKAN_CALLBACK OnUnmount(
+NTSTATUS DOKAN_CALLBACK OnUnmount(
 	PDOKAN_FILE_INFO);
 
 JNIEnv * get_env();

@@ -23,7 +23,8 @@ package net.decasdev.dokan;
 public class DokanOptions {
 	//public char driveLetter = 'S';
 	public String mountPoint = "S:\\";
-	public int threadCount = 1;
+	public String metaFilePath = null;
+	public int threadCount = 0;
 	public long optionsMode = DokanOptionsMode.Mode.REMOVABLE_DRIVE.getValue();
 
 	public DokanOptions() {
