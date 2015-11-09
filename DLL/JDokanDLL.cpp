@@ -31,6 +31,7 @@ with this program. If not, see <http://www.gnu.org/licenses/>.
 #undef WIN32_NO_STATUS
 #include <winbase.h>
 #include <ntstatus.h>
+#include <jni.h>
 
 /*
  * Class:     net_decasdev_dokan_Dokan
@@ -67,6 +68,87 @@ NTSTATUS ToNtStatus(DWORD dwError)
 	}
 }
 
+static void
+PrintUserName(PDOKAN_FILE_INFO	DokanFileInfo)
+{
+	HANDLE	handle;
+	UCHAR buffer[1024];
+	DWORD returnLength;
+	WCHAR accountName[256];
+	WCHAR domainName[256];
+	DWORD accountLength = sizeof(accountName) / sizeof(WCHAR);
+	DWORD domainLength = sizeof(domainName) / sizeof(WCHAR);
+	PTOKEN_USER tokenUser;
+	SID_NAME_USE snu;
+
+	handle = DokanOpenRequestorToken(DokanFileInfo);
+	if (handle == INVALID_HANDLE_VALUE) {
+		return;
+	}
+
+	if (!GetTokenInformation(handle, TokenUser, buffer, sizeof(buffer), &returnLength)) {
+		CloseHandle(handle);
+		return;
+	}
+
+	CloseHandle(handle);
+
+	tokenUser = (PTOKEN_USER)buffer;
+	if (!LookupAccountSid(NULL, tokenUser->User.Sid, accountName,
+		&accountLength, domainName, &domainLength, &snu)) {
+		return;
+	}
+}
+
+static BOOL AddSeSecurityNamePrivilege()
+{
+	HANDLE token = 0;
+	DWORD err;
+	LUID luid;
+	if (!LookupPrivilegeValue(0, SE_SECURITY_NAME, &luid)) {
+		err = GetLastError();
+		if (err != ERROR_SUCCESS) {
+			return FALSE;
+		}
+	}
+
+	LUID_AND_ATTRIBUTES attr;
+	attr.Attributes = SE_PRIVILEGE_ENABLED;
+	attr.Luid = luid;
+
+	TOKEN_PRIVILEGES priv;
+	priv.PrivilegeCount = 1;
+	priv.Privileges[0] = attr;
+
+	if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &token)) {
+		err = GetLastError();
+		if (err != ERROR_SUCCESS) {
+			return FALSE;
+		}
+	}
+
+	TOKEN_PRIVILEGES oldPriv;
+	DWORD retSize;
+	AdjustTokenPrivileges(token, FALSE, &priv, sizeof(TOKEN_PRIVILEGES), &oldPriv, &retSize);
+	err = GetLastError();
+	if (err != ERROR_SUCCESS) {
+		CloseHandle(token);
+		return FALSE;
+	}
+
+	BOOL privAlreadyPresent = FALSE;
+	for (unsigned int i = 0; i < oldPriv.PrivilegeCount; i++) {
+		if (oldPriv.Privileges[i].Luid.HighPart == luid.HighPart &&
+			oldPriv.Privileges[i].Luid.LowPart == luid.LowPart) {
+			privAlreadyPresent = TRUE;
+			break;
+		}
+	}
+	if (token)
+		CloseHandle(token);
+	return TRUE;
+}
+
 BOOL g_UseStdErr;
 BOOL g_DebugMode;
 
@@ -99,9 +181,12 @@ JNIEXPORT jint JNICALL Java_net_decasdev_dokan_Dokan_mount
 		InitMethodIDs(env);
 		g_UseStdErr = false;
 		g_DebugMode = false;
-		DOKAN_OPTIONS options;
-		ZeroMemory(&options, sizeof(DOKAN_OPTIONS));
-		options.Version = DOKAN_VERSION;
+		PDOKAN_OPTIONS options =
+			(PDOKAN_OPTIONS)malloc(sizeof(DOKAN_OPTIONS));
+		if (options == NULL) {
+			return EXIT_FAILURE;
+		}
+		options->Version = DOKAN_VERSION;
 		/* mountPoint */
 		jstring mountPoint = (jstring) env->GetObjectField(joptions, mountPointID);
 		jstring metaFilePath = (jstring)env->GetObjectField(joptions, metaFilePathID);
@@ -110,36 +195,40 @@ JNIEXPORT jint JNICALL Java_net_decasdev_dokan_Dokan_mount
 		wchar_t* wsz = new wchar_t[len+1];
 		memcpy(wsz, chars, len*2);
 	    wsz[len] = 0;
-		options.MountPoint = wsz;
+		options->MountPoint = wsz;
 		env->ReleaseStringChars(mountPoint, chars);
 		/* end MountPoint */
-		options.ThreadCount = env->GetIntField(joptions, threadCountID);
-		options.Options = env->GetLongField(joptions, optionsModeID);
+		options->ThreadCount = env->GetIntField(joptions, threadCountID);
+		options->Options = env->GetLongField(joptions, optionsModeID);
 
 
-		DOKAN_OPERATIONS operations;
-		ZeroMemory(&operations, sizeof(DOKAN_OPERATIONS));
-		operations.CreateFile = OnCreateFile;
-		operations.OpenDirectory = OnOpenDirectory;
-		operations.CreateDirectoryW = OnCreateDirectory;
-		operations.Cleanup = OnCleanup;
-		operations.CloseFile = OnCloseFile;
-		operations.ReadFile = OnReadFile;
-		operations.WriteFile = OnWriteFile;
-		operations.FlushFileBuffers = OnFlushFileBuffers;
-		operations.GetFileInformation = OnGetFileInformation;
-		operations.FindFiles = OnFindFiles;
+		PDOKAN_OPERATIONS operations =
+			(PDOKAN_OPERATIONS)malloc(sizeof(DOKAN_OPERATIONS));
+		if (operations == NULL) {
+			free(options);
+			return EXIT_FAILURE;
+		}
+		operations->CreateFile = OnCreateFile;
+		operations->OpenDirectory = OnOpenDirectory;
+		operations->CreateDirectoryW = OnCreateDirectory;
+		operations->Cleanup = OnCleanup;
+		operations->CloseFile = OnCloseFile;
+		operations->ReadFile = OnReadFile;
+		operations->WriteFile = OnWriteFile;
+		operations->FlushFileBuffers = OnFlushFileBuffers;
+		operations->GetFileInformation = OnGetFileInformation;
+		operations->FindFiles = OnFindFiles;
 		//operations.FindFilesWithPattern = OnFindFilesWithPattern;
-		operations.SetFileAttributesW = OnSetFileAttributes;
-		operations.SetFileTime = OnSetFileTime;
-		operations.DeleteFileW = OnDeleteFile;
-		operations.DeleteDirectory = OnDeleteDirectory;
-		operations.MoveFileW = OnMoveFile;
-		operations.SetEndOfFile = OnSetEndOfFile;
-		operations.LockFile = OnLockFile;
-		operations.UnlockFile = OnUnlockFile;
-		operations.GetDiskFreeSpace = OnGetDiskFreeSpace;
-		operations.GetVolumeInformation = OnGetVolumeInformation;
+		operations->SetFileAttributesW = OnSetFileAttributes;
+		operations->SetFileTime = OnSetFileTime;
+		operations->DeleteFileW = OnDeleteFile;
+		operations->DeleteDirectory = OnDeleteDirectory;
+		operations->MoveFileW = OnMoveFile;
+		operations->SetEndOfFile = OnSetEndOfFile;
+		operations->LockFile = OnLockFile;
+		operations->UnlockFile = OnUnlockFile;
+		operations->GetDiskFreeSpace = OnGetDiskFreeSpace;
+		operations->GetVolumeInformation = OnGetVolumeInformation;
 		if (metaFilePath != NULL) {
 			int mlen = env->GetStringLength(metaFilePath);
 			const jchar* str = env->GetStringChars(metaFilePath, NULL);
@@ -147,16 +236,22 @@ JNIEXPORT jint JNICALL Java_net_decasdev_dokan_Dokan_mount
 			memcpy(swsz, str, mlen * 2);
 			swsz[mlen] = 0;
 			wcscpy_s(RootDirectory, sizeof(RootDirectory) / sizeof(WCHAR), swsz);
-			operations.GetFileSecurityW = onGetFileSecurity;
-			operations.SetFileSecurityW = onSetFileSecurity;
+			operations->GetFileSecurityW = onGetFileSecurity;
+			operations->SetFileSecurityW = onSetFileSecurity;
 			DbgPrint(L"GetFileSecurity %s\n", RootDirectory);
+			if (!AddSeSecurityNamePrivilege()) {
+				fwprintf(stderr, L"  Failed to add security privilege to process\n");
+				free(operations);
+				free(options);
+				return -1;
+			}
 		}
 		else {
-			DbgPrint(L"Poop\n", RootDirectory);
+			DbgPrint(L"Root Directory=%s\n", RootDirectory);
 		}
-		operations.Unmount = OnUnmount;
+		operations->Unmount = OnUnmount;
 
-		return DokanMain(&options, &operations);
+		return DokanMain(options, operations);
 	} catch(const char* msg) {
 		env->ThrowNew(env->FindClass("java/lang/NoSuchFieldError"), msg);
 		return FALSE;

@@ -73,6 +73,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>C:\Program Files\Java\jdk1.8.0_40\include\win32;C:\Program Files\Dokan\DokanLibrary\include\dokan;$(IncludePath);C:\Program Files\Java\jdk1.8.0_40\include</IncludePath>
+    <LibraryPath>C:\Program Files\Dokan\DokanLibrary;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
@@ -81,6 +83,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>C:\Program Files\Java\jdk1.8.0_40\include\win32;C:\Program Files\Dokan\DokanLibrary\include\dokan;$(IncludePath);C:\Program Files\Java\jdk1.8.0_40\include</IncludePath>
+    <LibraryPath>C:\Program Files\Dokan\DokanLibrary;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -105,7 +109,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>C:\Program Files\Java\jdk1.5.0_15\include;C:\Program Files\Java\jdk1.5.0_15\include\win32;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Program Files\Java\jdk1.8.0_40\include\win32;C:\Program Files\Java\jdk1.8.0_40\include;C:\Program Files\Java\jdk1.5.0_15\include;C:\Program Files\Java\jdk1.5.0_15\include\win32;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;JDokanDLL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -141,7 +145,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Program Files %28x86%29\Microsoft SDKs\Windows\v7.1A\Include;C:\Users\samsilverberg\Documents\devel\dokany-0.8.0\dokan;C:\Program Files\Java\jdk1.8.0_40\include\win32;C:\Program Files\Java\jdk1.8.0_40\include;C:\Program Files\Java\jdk1.7.0_75\include;C:\Program Files\Java\jdk1.7.0_75\include\win32;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Program Files\Java\jdk1.8.0_40\include\win32;C:\Program Files\Java\jdk1.8.0_40\include;C:\Program Files\Java\jdk1.5.0_15\include;C:\Program Files\Java\jdk1.5.0_15\include\win32;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;JDokanDLL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -150,7 +154,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>C:\Program Files\Dokan\DokanLibrary\dokan.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>C:\Program Files\Dokan\DokanLibrary;$(OutDir);C:\work\prog\ufuse\trunk\uFuseWin\binary;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OutDir);C:\work\prog\ufuse\trunk\uFuseWin\binary;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
@@ -170,8 +174,7 @@
     <ClCompile Include="Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\..\..\..\Program Files\Java\jdk1.7.0_75\include\jni.h" />
-    <ClInclude Include="..\..\..\devel\dokany-0.8.0\dokan\dokan.h" />
+    <ClInclude Include="..\..\dokan\dokan.h" />
     <ClInclude Include="DokanObjUtils.h" />
     <ClInclude Include="IDs.h" />
     <ClInclude Include="JDokanDLL.h" />
