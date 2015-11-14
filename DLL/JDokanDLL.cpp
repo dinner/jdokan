@@ -17,21 +17,23 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License along
 with this program. If not, see <http://www.gnu.org/licenses/>.
 */
-
-#include "stdafx.h"
-
-#include "net_decasdev_dokan_Dokan.h"
-#include "..\..\dokany\dokan\dokan.h"
-#include "JDokanDLL.h"
-#include "Utils.h"
-#include "DokanObjUtils.h"
-#include "IDs.h"
 #define WIN32_NO_STATUS
 #include <windows.h>
 #undef WIN32_NO_STATUS
 #include <winbase.h>
 #include <ntstatus.h>
-#include <jni.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <malloc.h>
+#include "../dokan/dokan.h"
+#include "../dokan/fileinfo.h"
+#include "stdafx.h"
+#include "net_decasdev_dokan_Dokan.h"
+#include "JDokanDLL.h"
+#include "Utils.h"
+#include "DokanObjUtils.h"
+#include "IDs.h"
+
 
 /*
  * Class:     net_decasdev_dokan_Dokan
@@ -59,10 +61,21 @@ NTSTATUS ToNtStatus(DWORD dwError)
 		return STATUS_OBJECT_PATH_NOT_FOUND;
 	case ERROR_INVALID_PARAMETER:
 		return STATUS_INVALID_PARAMETER;
-	case ERROR_ALREADY_EXISTS:
-			return STATUS_OBJECT_NAME_EXISTS;
 	case ERROR_DIR_NOT_EMPTY:
 		return STATUS_DIRECTORY_NOT_EMPTY;
+	case ERROR_ACCESS_DENIED:
+		return STATUS_ACCESS_DENIED;
+	case ERROR_SHARING_VIOLATION:
+		return STATUS_SHARING_VIOLATION;
+	case ERROR_INVALID_NAME:
+		return STATUS_OBJECT_NAME_NOT_FOUND;
+	case ERROR_FILE_EXISTS:
+	case ERROR_ALREADY_EXISTS:
+		return STATUS_OBJECT_NAME_COLLISION;
+	case ERROR_PRIVILEGE_NOT_HELD:
+		return STATUS_PRIVILEGE_NOT_HELD;
+	case ERROR_NOT_READY:
+		return STATUS_DEVICE_NOT_READY;
 	default:
 		return STATUS_ACCESS_DENIED;
 	}
@@ -170,65 +183,54 @@ static void DbgPrint(LPCWSTR format, ...)
 }
 
 JNIEXPORT jint JNICALL Java_net_decasdev_dokan_Dokan_mount
-  (JNIEnv *env, jclass, jobject joptions, jobject joperations)
+(JNIEnv *env, jclass, jobject joptions, jobject joperations)
 {
 	try {
 		if (jvm != NULL)
 			throw "You cannot mount twice at this version of Dokan";
 		env->GetJavaVM(&jvm);
-		gOperations =  env->NewGlobalRef(joperations);
+		gOperations = env->NewGlobalRef(joperations);
 
 		InitMethodIDs(env);
-		g_UseStdErr = false;
-		g_DebugMode = false;
-		PDOKAN_OPTIONS options =
-			(PDOKAN_OPTIONS)malloc(sizeof(DOKAN_OPTIONS));
-		if (options == NULL) {
-			return EXIT_FAILURE;
-		}
-		options->Version = DOKAN_VERSION;
+		g_UseStdErr = true;
+		g_DebugMode = true;
+		DOKAN_OPTIONS options;
+		ZeroMemory(&options, sizeof(DOKAN_OPTIONS));
+		options.Version = DOKAN_VERSION;
 		/* mountPoint */
-		jstring mountPoint = (jstring) env->GetObjectField(joptions, mountPointID);
+		jstring mountPoint = (jstring)env->GetObjectField(joptions, mountPointID);
 		jstring metaFilePath = (jstring)env->GetObjectField(joptions, metaFilePathID);
 		int len = env->GetStringLength(mountPoint);
 		const jchar* chars = env->GetStringChars(mountPoint, NULL);
-		wchar_t* wsz = new wchar_t[len+1];
-		memcpy(wsz, chars, len*2);
-	    wsz[len] = 0;
-		options->MountPoint = wsz;
+		wchar_t* wsz = new wchar_t[len + 1];
+		memcpy(wsz, chars, len * 2);
+		wsz[len] = 0;
+		options.MountPoint = wsz;
 		env->ReleaseStringChars(mountPoint, chars);
 		/* end MountPoint */
-		options->ThreadCount = env->GetIntField(joptions, threadCountID);
-		options->Options = env->GetLongField(joptions, optionsModeID);
-
-
-		PDOKAN_OPERATIONS operations =
-			(PDOKAN_OPERATIONS)malloc(sizeof(DOKAN_OPERATIONS));
-		if (operations == NULL) {
-			free(options);
-			return EXIT_FAILURE;
-		}
-		operations->CreateFile = OnCreateFile;
-		operations->OpenDirectory = OnOpenDirectory;
-		operations->CreateDirectoryW = OnCreateDirectory;
-		operations->Cleanup = OnCleanup;
-		operations->CloseFile = OnCloseFile;
-		operations->ReadFile = OnReadFile;
-		operations->WriteFile = OnWriteFile;
-		operations->FlushFileBuffers = OnFlushFileBuffers;
-		operations->GetFileInformation = OnGetFileInformation;
-		operations->FindFiles = OnFindFiles;
+		options.ThreadCount = env->GetIntField(joptions, threadCountID);
+		options.Options = env->GetLongField(joptions, optionsModeID);
+		DOKAN_OPERATIONS operations;
+		ZeroMemory(&operations, sizeof(DOKAN_OPERATIONS));
+		operations.ZwCreateFile = OnCreateFile;
+		operations.Cleanup = OnCleanup;
+		operations.CloseFile = OnCloseFile;
+		operations.ReadFile = OnReadFile;
+		operations.WriteFile = OnWriteFile;
+		operations.FlushFileBuffers = OnFlushFileBuffers;
+		operations.GetFileInformation = OnGetFileInformation;
+		operations.FindFiles = OnFindFiles;
 		//operations.FindFilesWithPattern = OnFindFilesWithPattern;
-		operations->SetFileAttributesW = OnSetFileAttributes;
-		operations->SetFileTime = OnSetFileTime;
-		operations->DeleteFileW = OnDeleteFile;
-		operations->DeleteDirectory = OnDeleteDirectory;
-		operations->MoveFileW = OnMoveFile;
-		operations->SetEndOfFile = OnSetEndOfFile;
-		operations->LockFile = OnLockFile;
-		operations->UnlockFile = OnUnlockFile;
-		operations->GetDiskFreeSpace = OnGetDiskFreeSpace;
-		operations->GetVolumeInformation = OnGetVolumeInformation;
+		operations.SetFileAttributesW = OnSetFileAttributes;
+		operations.SetFileTime = OnSetFileTime;
+		operations.DeleteFileW = OnDeleteFile;
+		operations.DeleteDirectory = OnDeleteDirectory;
+		operations.MoveFileW = OnMoveFile;
+		operations.SetEndOfFile = OnSetEndOfFile;
+		operations.LockFile = OnLockFile;
+		operations.UnlockFile = OnUnlockFile;
+		operations.GetDiskFreeSpace = OnGetDiskFreeSpace;
+		operations.GetVolumeInformation = OnGetVolumeInformation;
 		if (metaFilePath != NULL) {
 			int mlen = env->GetStringLength(metaFilePath);
 			const jchar* str = env->GetStringChars(metaFilePath, NULL);
@@ -236,23 +238,29 @@ JNIEXPORT jint JNICALL Java_net_decasdev_dokan_Dokan_mount
 			memcpy(swsz, str, mlen * 2);
 			swsz[mlen] = 0;
 			wcscpy_s(RootDirectory, sizeof(RootDirectory) / sizeof(WCHAR), swsz);
-			operations->GetFileSecurityW = onGetFileSecurity;
-			operations->SetFileSecurityW = onSetFileSecurity;
+			operations.GetFileSecurityW = onGetFileSecurity;
+			operations.SetFileSecurityW = onSetFileSecurity;
 			DbgPrint(L"GetFileSecurity %s\n", RootDirectory);
 			if (!AddSeSecurityNamePrivilege()) {
-				fwprintf(stderr, L"  Failed to add security privilege to process\n");
-				free(operations);
-				free(options);
+				printf("  Failed to add security privilege to process\n");
+				free(&operations);
+				free(&options);
 				return -1;
+			}
+			else {
+				//printf("oooooooooooooooooooooo\n");
 			}
 		}
 		else {
-			DbgPrint(L"Root Directory=%s\n", RootDirectory);
+			DbgPrint(L"Poop\n", RootDirectory);
 		}
-		operations->Unmount = OnUnmount;
-
-		return DokanMain(options, operations);
-	} catch(const char* msg) {
+		operations.Unmount = OnUnmount;
+		int st = DokanMain(&options, &operations);
+		free(&operations);
+		free(&options);
+		return st;
+	}
+	catch (const char* msg) {
 		env->ThrowNew(env->FindClass("java/lang/NoSuchFieldError"), msg);
 		return FALSE;
 	}
@@ -271,14 +279,13 @@ LPCWSTR FileName)
 }
 
 NTSTATUS DOKAN_CALLBACK OnCreateFile(
-		LPCWSTR		FileName,
-		DWORD		DesiredAccess,
-		DWORD		ShareMode,
-		DWORD		CreationDisposition,
-		DWORD		FlagsAndAttributes,
-		//HANDLE,       // TemplateFile
-		PDOKAN_FILE_INFO DokanFileInfo)
+	LPCWSTR FileName, PDOKAN_IO_SECURITY_CONTEXT SecurityContext,
+	ACCESS_MASK DesiredAccess, ULONG FileAttributes,
+	ULONG ShareAccess, ULONG CreateDisposition,
+	ULONG CreateOptions, PDOKAN_FILE_INFO DokanFileInfo)
+
 {
+
 	LOG(L"[OnCreateFile] FileName = %s\n", FileName);
 	JNIEnv* env = get_env();
 	//jvm->AttachCurrentThread((void **)&env, NULL);
@@ -289,8 +296,8 @@ NTSTATUS DOKAN_CALLBACK OnCreateFile(
 		jobject jdokanFileInfo = ToDokanFileInfoJavaObject(env, DokanFileInfo);
 		
 		jlong handle = env->CallLongMethod(gOperations, onCreateFileID, 
-			jfileName, DesiredAccess, ShareMode, CreationDisposition,
-			FlagsAndAttributes, jdokanFileInfo);
+			jfileName, DesiredAccess, ShareAccess, CreateDisposition,FileAttributes,
+			CreateOptions, jdokanFileInfo);
 		result = GetOperationResult(env);
 
 		if (result == 0) {
@@ -314,17 +321,27 @@ ULONG				BufferLength,
 PULONG				LengthNeeded,
 PDOKAN_FILE_INFO	DokanFileInfo)
 {
-	HANDLE	handle;
 	WCHAR	filePath[MAX_PATH];
+
+
+	UNREFERENCED_PARAMETER(DokanFileInfo);
 
 	GetFilePath(filePath, MAX_PATH, FileName);
 
 	DbgPrint(L"GetFileSecurity %s\n", filePath);
+	HANDLE handle = CreateFile(
+		filePath,
+		READ_CONTROL | ((*SecurityInformation & SACL_SECURITY_INFORMATION) ? ACCESS_SYSTEM_SECURITY : 0),
+		FILE_SHARE_WRITE | FILE_SHARE_READ | FILE_SHARE_DELETE,
+		NULL, // security attribute
+		OPEN_EXISTING,
+		FILE_FLAG_BACKUP_SEMANTICS,// |FILE_FLAG_NO_BUFFERING,
+		NULL);
 
-	handle = (HANDLE)DokanFileInfo->Context;
 	if (!handle || handle == INVALID_HANDLE_VALUE) {
 		DbgPrint(L"\tinvalid handle\n\n");
-		return STATUS_INVALID_HANDLE;
+		int error = GetLastError();
+		return ToNtStatus(error);
 	}
 
 	if (!GetUserObjectSecurity(handle, SecurityInformation, SecurityDescriptor,
@@ -332,14 +349,19 @@ PDOKAN_FILE_INFO	DokanFileInfo)
 		int error = GetLastError();
 		if (error == ERROR_INSUFFICIENT_BUFFER) {
 			DbgPrint(L"  GetUserObjectSecurity failed: ERROR_INSUFFICIENT_BUFFER\n");
-			return STATUS_BUFFER_OVERFLOW;
+			CloseHandle(handle);
+			return ToNtStatus(error);
 		}
 		else {
 			DbgPrint(L"  GetUserObjectSecurity failed: %d\n", error);
+			CloseHandle(handle);
 			return ToNtStatus(error);
 		}
 	}
+	CloseHandle(handle);
+
 	return STATUS_SUCCESS;
+	
 }
 
 
@@ -372,58 +394,6 @@ PDOKAN_FILE_INFO	DokanFileInfo)
 		return ToNtStatus(error);
 	}
 	return STATUS_SUCCESS;
-}
-
-NTSTATUS DOKAN_CALLBACK OnOpenDirectory(
-	LPCWSTR				FileName,
-	PDOKAN_FILE_INFO DokanFileInfo)
-{
-	LOG(L"[OnOpenDirectory] FileName = %s\n", FileName);
-	JNIEnv* env = get_env();
-	//jvm->AttachCurrentThread((void **)&env, NULL);
-
-	int result = -ERROR_GEN_FAILURE;
-	try {
-		jstring jfileName = ToJavaString(env, FileName);
-		jobject jdokanFileInfo = ToDokanFileInfoJavaObject(env, DokanFileInfo);
-		
-		jlong handle = env->CallLongMethod(gOperations, onOpenDirectoryID, 
-			jfileName, jdokanFileInfo);
-		result = GetOperationResult(env);
-
-		if (result == 0) {
-			DokanFileInfo->Context = handle;
-		}
-	} catch(const char* msg) {
-		LOGA("[OnOpenDirectory] %s\n", msg); 
-	}
-
-	release_env(env);
-	return ToNtStatus(result);
-}
-
-NTSTATUS DOKAN_CALLBACK OnCreateDirectory(
-	LPCWSTR				FileName,
-	PDOKAN_FILE_INFO DokanFileInfo)
-{
-	LOG(L"[OnCreateDirectory] FileName = %s\n", FileName);
-	JNIEnv* env = get_env();
-	//jvm->AttachCurrentThread((void **)&env, NULL);
-
-	int result = -ERROR_GEN_FAILURE;
-	try {
-		jstring jfileName = ToJavaString(env, FileName);
-		jobject jdokanFileInfo = ToDokanFileInfoJavaObject(env, DokanFileInfo);
-		
-		env->CallVoidMethod(gOperations, onCreateDirectoryID, 
-			jfileName, jdokanFileInfo);
-		result = GetOperationResult(env);
-	} catch(const char* msg) {
-		LOGA("[OnCreateDirectory] %s\n", msg); 
-	}
-
-	release_env(env);
-	return  ToNtStatus(result);
 }
 
 void DOKAN_CALLBACK OnCleanup(

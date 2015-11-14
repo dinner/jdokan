@@ -81,8 +81,6 @@ jmethodID dokanVolumeInfoConstID = NULL;
 jmethodID win32FindDataConstID = NULL;
 
 jmethodID onCreateFileID = NULL;
-jmethodID onOpenDirectoryID = NULL;
-jmethodID onCreateDirectoryID = NULL;
 jmethodID onCleanupID = NULL;
 jmethodID onCloseFileID = NULL;
 jmethodID onReadFileID = NULL;
@@ -366,21 +364,9 @@ void InitMethodIDs(JNIEnv *env) throw(...)
 
 	// DokanOperations.onCreateFile
 	onCreateFileID = env->GetMethodID(dokanDokanOperationsClass, "onCreateFile", 
-		"(Ljava/lang/String;IIIILnet/decasdev/dokan/DokanFileInfo;)J");
+		"(Ljava/lang/String;IIIIILnet/decasdev/dokan/DokanFileInfo;)J");
 	if(onCreateFileID == NULL)
 		throw "Cannot find DokanOperations.onCreateFile method";
-
-	// DokanOperations.onOpenDirectory
-	onOpenDirectoryID = env->GetMethodID(dokanDokanOperationsClass, "onOpenDirectory", 
-		"(Ljava/lang/String;Lnet/decasdev/dokan/DokanFileInfo;)J");
-	if(onOpenDirectoryID == NULL)
-		throw "Cannot find DokanOperations.onOpenDirectory method";
-
-	// DokanOperations.onCreateDirectory
-	onCreateDirectoryID = env->GetMethodID(dokanDokanOperationsClass, "onCreateDirectory", 
-		"(Ljava/lang/String;Lnet/decasdev/dokan/DokanFileInfo;)V");
-	if(onCreateDirectoryID == NULL)
-		throw "Cannot find DokanOperations.onCreateDirectory method";
 
 	// DokanOperations.onCleanup
 	onCleanupID = env->GetMethodID(dokanDokanOperationsClass, "onCleanup", 

@@ -20,7 +20,7 @@ with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #include "stdafx.h"
 #include "net_decasdev_dokan_Dokan.h"
-#include "..\..\dokany\dokan\dokan.h"
+#include "../dokan/dokan.h"
 #include "JDokanDLL.h"
 #include "Utils.h"
 #include "IDs.h"

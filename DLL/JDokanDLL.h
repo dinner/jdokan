@@ -19,32 +19,17 @@ with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
 #pragma once
-#define WIN32_NO_STATUS
 #include <windows.h>
-#undef WIN32_NO_STATUS
-#include <winbase.h>
-#include <ntstatus.h>
-typedef LONG NTSTATUS;
 void InitMethodIDs(JNIEnv *env);
+typedef long NTSTATUS;
 
 static WCHAR RootDirectory[MAX_PATH] = L"C:";
 
 NTSTATUS DOKAN_CALLBACK OnCreateFile(
-		LPCWSTR,      // FileName
-		DWORD,        // DesiredAccess
-		DWORD,        // ShareMode
-		DWORD,        // CreationDisposition
-		DWORD,        // FlagsAndAttributes
-		//HANDLE,       // TemplateFile
-		PDOKAN_FILE_INFO);
-
-NTSTATUS DOKAN_CALLBACK OnOpenDirectory(
-	LPCWSTR,				// FileName
-	PDOKAN_FILE_INFO);
-
-NTSTATUS DOKAN_CALLBACK OnCreateDirectory(
-	LPCWSTR,				// FileName
-	PDOKAN_FILE_INFO);
+	LPCWSTR FileName, PDOKAN_IO_SECURITY_CONTEXT SecurityContext,
+	ACCESS_MASK DesiredAccess, ULONG FileAttributes,
+	ULONG ShareAccess, ULONG CreateDisposition,
+	ULONG CreateOptions, PDOKAN_FILE_INFO DokanFileInfo);
 
 void DOKAN_CALLBACK OnCleanup(
 	LPCWSTR,      // FileName

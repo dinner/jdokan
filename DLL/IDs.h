@@ -80,8 +80,6 @@ extern jmethodID dokanVolumeInfoConstID;
 extern jmethodID win32FindDataConstID;
 
 extern jmethodID onCreateFileID;
-extern jmethodID onOpenDirectoryID;
-extern jmethodID onCreateDirectoryID;
 extern jmethodID onCleanupID;
 extern jmethodID onCloseFileID;
 extern jmethodID onReadFileID;
