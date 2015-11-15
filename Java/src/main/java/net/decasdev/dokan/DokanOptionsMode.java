@@ -12,12 +12,12 @@ public class DokanOptionsMode{
 
     public enum Mode{
 
-        DEBUG(0x00000001),
-        STD_ERR(0x00000002),
-        ALT_STREAM(0x00000004),
-        KEEP_ALIVE(0x00000008),
-        NETWORK_DRIVE(0x00000010),
-        REMOVABLE_DRIVE(0x00000020);
+        DEBUG(1),
+        STD_ERR(2),
+        ALT_STREAM(4),
+        WRITE_PROTECT(8),
+        NETWORK_DRIVE(16),
+        REMOVABLE_DRIVE(32);
         
         private int value;
 

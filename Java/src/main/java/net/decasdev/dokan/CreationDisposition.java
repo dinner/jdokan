@@ -21,12 +21,13 @@ with this program. If not, see <http://www.gnu.org/licenses/>.
 package net.decasdev.dokan;
 
 public enum CreationDisposition {
-    CREATE_NEW(1),
-    OPEN_ALWAYS(2),
-    OPEN_EXISTING(3),
-    CREATE_ALWAYS(4),
-    TRUNCATE_EXISTING(5),
-    UNDEFINED(0);
+	FILE_SUPERSEDE(0),
+    FILE_OPEN(1),
+    FILE_CREATE(2),
+    FILE_OPEN_IF(3),
+    FILE_OVERWRITE(4),
+    FILE_OVERWRITE_IF(5),
+    UNDEFINED(-1);
 
     private int value;
 

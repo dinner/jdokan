@@ -42,25 +42,7 @@ public interface DokanOperations {
 	 * @throws DokanOperationException
 	 */
 	public long onCreateFile(String fileName, int desiredAccess, int shareMode, int creationDisposition,
-			int flagsAndAttributes, DokanFileInfo fileInfo) throws DokanOperationException;
-
-	/**
-	 * 
-	 * @param fileName
-	 * @param fileInfo
-	 * @return handle
-	 * @throws DokanOperationException
-	 */
-	public long onOpenDirectory(String fileName, DokanFileInfo fileInfo) throws DokanOperationException;
-
-	/**
-	 * 
-	 * @param fileName
-	 * @param fileInfo
-	 * @throws DokanOperationException
-	 */
-	public void onCreateDirectory(String fileName, DokanFileInfo fileInfo)
-			throws DokanOperationException;
+			int flagsAndAttributes,int createOptions, DokanFileInfo fileInfo) throws DokanOperationException;
 
 	/**
 	 * 
