@@ -20,7 +20,7 @@ public class DokanOptionsMode{
         REMOVABLE_DRIVE(32);
         
         private int value;
-
+        
         Mode(int value) {
             this.value = value;
         }

@@ -21,19 +21,19 @@ with this program. If not, see <http://www.gnu.org/licenses/>.
 #pragma once
 
 #ifndef WINVER				
-#define WINVER 0x0500		
+#define WINVER 0x0601		
 #endif
 
 #ifndef _WIN32_WINNT		
-#define _WIN32_WINNT 0x0500	
+#define _WIN32_WINNT 0x0601	
 #endif						
 
 #ifndef _WIN32_WINDOWS		
-#define _WIN32_WINDOWS 0x0410 
+#define _WIN32_WINDOWS 0x0601 
 #endif
 
 #ifndef _WIN32_IE			
-#define _WIN32_IE 0x0500	
+#define _WIN32_IE 0x0601	
 #endif
 
 #define WIN32_LEAN_AND_MEAN		

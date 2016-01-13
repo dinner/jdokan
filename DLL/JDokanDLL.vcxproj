@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -23,28 +23,29 @@
     <ProjectGuid>{5478CADF-A7F4-4847-AAAC-1CE2B08B163D}</ProjectGuid>
     <RootNamespace>JDokanDLL</RootNamespace>
     <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -70,36 +71,41 @@
     <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
     <IntDir>$(Configuration)\</IntDir>
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>C:\Program Files\Java\jdk1.8.0_40\include\win32;C:\Program Files\Java\jdk1.8.0_40\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Program Files\Dokan\DokanLibrary\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>C:\Program Files\Java\jdk1.8.0_40\include\win32;C:\Program Files\Dokan\DokanLibrary\include\dokan;$(IncludePath);C:\Program Files\Java\jdk1.8.0_40\include</IncludePath>
-    <LibraryPath>C:\Program Files\Dokan\DokanLibrary;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Program Files\Java\jdk1.8.0_40\include\win32;C:\Program Files\Java\jdk1.8.0_40\include;C:\Users\samsilverberg\Documents\GitHub\jdokan\sys;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Program Files\Dokan\DokanLibrary\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
     <IntDir>$(Configuration)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>C:\Program Files\Java\jdk1.8.0_40\include\win32;C:\Program Files\Java\jdk1.8.0_40\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Program Files\Dokan\DokanLibrary\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>C:\Program Files\Java\jdk1.8.0_40\include\win32;C:\Program Files\Dokan\DokanLibrary\include\dokan;$(IncludePath);C:\Program Files\Java\jdk1.8.0_40\include</IncludePath>
-    <LibraryPath>C:\Program Files\Dokan\DokanLibrary;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Program Files\Java\jdk1.8.0_40\include\win32;C:\Program Files\Java\jdk1.8.0_40\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Program Files\Dokan\DokanLibrary\lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>C:\Program Files\Java\jdk1.5.0_15\include;C:\Program Files\Java\jdk1.5.0_15\include\win32;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Program Files\Java\jdk1.8.0_40\include\win32;C:\Program Files\Java\jdk1.8.0_40\include;C:\Users\samsilverberg\Documents\GitHub\jdokan\sys</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;JDokanDLL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <CompileAs>Default</CompileAs>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>C:\Program Files\Dokan\DokanLibrary\dokan.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>dokan.lib;ntdll.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\..\..\uFuseWin\uFuse\;..\..\..\uFuseWin\binary;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -109,16 +115,18 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>C:\Program Files\Java\jdk1.8.0_40\include\win32;C:\Program Files\Java\jdk1.8.0_40\include;C:\Program Files\Java\jdk1.5.0_15\include;C:\Program Files\Java\jdk1.5.0_15\include\win32;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;JDokanDLL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Program Files\Java\jdk1.8.0_40\include\win32;C:\Program Files\Java\jdk1.8.0_40\include;C:\Users\samsilverberg\Documents\GitHub\jdokan\sys</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <MinimalRebuild>true</MinimalRebuild>
+      <CompileAs>Default</CompileAs>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>C:\Program Files\Dokan\DokanLibrary\dokan.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>dokan.lib;ntdll.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\..\..\uFuseWin\uFuse\;..\..\..\uFuseWin\binary;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -126,15 +134,16 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Program Files\Java\jdk1.5.0_15\include;C:\Program Files\Java\jdk1.5.0_15\include\win32;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Program Files\Java\jdk1.8.0_40\include\win32;C:\Program Files\Java\jdk1.8.0_40\include;C:\Users\samsilverberg\Documents\GitHub\jdokan\sys</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;JDokanDLL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <CompileAs>Default</CompileAs>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>C:\Program Files\Dokan\DokanLibrary\dokan.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>dokan.lib;ntdll.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir);C:\work\prog\ufuse\trunk\uFuseWin\binary;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -145,16 +154,19 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Program Files\Java\jdk1.8.0_40\include\win32;C:\Program Files\Java\jdk1.8.0_40\include;C:\Program Files\Java\jdk1.5.0_15\include;C:\Program Files\Java\jdk1.5.0_15\include\win32;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;JDokanDLL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Program Files\Java\jdk1.8.0_40\include\win32;C:\Program Files\Java\jdk1.8.0_40\include;C:\Users\samsilverberg\Documents\GitHub\jdokan\sys</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <CompileAs>Default</CompileAs>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>C:\Program Files\Dokan\DokanLibrary\dokan.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir);C:\work\prog\ufuse\trunk\uFuseWin\binary;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>dokan.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(OutDir);C:\Program Files\Dokan\DokanLibrary\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
@@ -174,7 +186,9 @@
     <ClCompile Include="Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\dokan\dokan.h" />
+    <ClInclude Include="..\dokan\dokan.h" />
+    <ClInclude Include="..\dokan\fileinfo.h" />
+    <ClInclude Include="..\sys\public.h" />
     <ClInclude Include="DokanObjUtils.h" />
     <ClInclude Include="IDs.h" />
     <ClInclude Include="JDokanDLL.h" />

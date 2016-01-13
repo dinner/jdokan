@@ -25,7 +25,7 @@ public class DokanOptions {
 	public String mountPoint = "S:\\";
 	public String metaFilePath = null;
 	public int threadCount = 0;
-	public long optionsMode = DokanOptionsMode.Mode.REMOVABLE_DRIVE.getValue();
+	public long optionsMode = 0;
 
 	public DokanOptions() {
 	}

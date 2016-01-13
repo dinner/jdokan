@@ -32,9 +32,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\dokan\dokan.h">
-      <Filter>Header File</Filter>
-    </ClInclude>
     <ClInclude Include="DokanObjUtils.h">
       <Filter>Header File</Filter>
     </ClInclude>
@@ -51,6 +48,15 @@
       <Filter>Header File</Filter>
     </ClInclude>
     <ClInclude Include="Utils.h">
+      <Filter>Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="..\dokan\dokan.h">
+      <Filter>Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="..\dokan\fileinfo.h">
+      <Filter>Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sys\public.h">
       <Filter>Header File</Filter>
     </ClInclude>
   </ItemGroup>
