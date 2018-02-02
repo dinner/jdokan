@@ -23,6 +23,7 @@ package net.decasdev.dokan;
 public class DokanOptions {
 	//public char driveLetter = 'S';
 	public String mountPoint = "S:\\";
+	public String uncPath = null;
 	public String metaFilePath = null;
 	public int threadCount = 0;
 	public long optionsMode = 0;

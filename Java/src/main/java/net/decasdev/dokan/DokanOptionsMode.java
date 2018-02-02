@@ -17,7 +17,8 @@ public class DokanOptionsMode{
         ALT_STREAM(4),
         WRITE_PROTECT(8),
         NETWORK_DRIVE(16),
-        REMOVABLE_DRIVE(32);
+        REMOVABLE_DRIVE(32),
+        DOKAN_OPTION_MOUNT_MANAGER(64);
         
         private int value;
         

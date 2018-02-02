@@ -42,7 +42,7 @@ public class Dokan {
 	}
 	
 	// DokanMain
-	public static native int mount(DokanOptions options,DokanOperations operations);
+	public static native int mount(DokanOptions options,DokanOperations operations,boolean debug);
 
 	public static native boolean unmount(char driveLetter);
 	
