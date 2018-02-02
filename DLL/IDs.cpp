@@ -35,6 +35,7 @@ jclass win32FindDataClass = NULL;
 
 jfieldID mountPointID = NULL;
 jfieldID metaFilePathID = NULL;
+jfieldID uncPathID = NULL;
 //jfieldID driveLetterID = NULL;
 jfieldID threadCountID = NULL;
 jfieldID optionsModeID = NULL;
@@ -324,9 +325,8 @@ void InitMethodIDs(JNIEnv *env) throw(...)
 
 	// DokanOptions.mountPoint
 	mountPointID = env->GetFieldID(dokanOptionsClass, "mountPoint", "Ljava/lang/String;");
+	uncPathID = env->GetFieldID(dokanOptionsClass, "uncPath", "Ljava/lang/String;");
 	if(mountPointID == NULL)
-		throw "Cannot find field mountPoint at DokanOperations class";
-	if (mountPointID == NULL)
 		throw "Cannot find field mountPoint at DokanOperations class";
 	metaFilePathID = env->GetFieldID(dokanOptionsClass, "metaFilePath", "Ljava/lang/String;");
 	

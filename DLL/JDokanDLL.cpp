@@ -21,6 +21,8 @@ with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <windows.h>
 #undef WIN32_NO_STATUS
 #include <winbase.h>
+#include <accctrl.h>
+#include <aclapi.h>
 #include <ntstatus.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -143,61 +145,53 @@ PrintUserName(PDOKAN_FILE_INFO	DokanFileInfo)
 	}
 }
 
-static BOOL AddSeSecurityNamePrivilege() {
-	HANDLE token = 0;
-	DbgPrint(
-		L"## Attempting to add SE_SECURITY_NAME privilege to process token ##\n");
-	DWORD err;
+int SetPrivilege(LPCWSTR privilege, int enable)
+{
+	TOKEN_PRIVILEGES tp;
 	LUID luid;
-	if (!LookupPrivilegeValue(0, SE_SECURITY_NAME, &luid)) {
-		err = GetLastError();
+	HANDLE token;
+
+	if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, &token)) return 0;
+	if (!LookupPrivilegeValue(NULL, privilege, &luid)) return 0;
+
+	tp.PrivilegeCount = 1;
+	tp.Privileges[0].Luid = luid;
+	if (enable) tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+	else tp.Privileges[0].Attributes = 0;
+	int rstl = AdjustTokenPrivileges(token, 0, &tp, NULL, NULL, NULL);
+	CloseHandle(token);
+	return rstl;
+}
+
+static BOOL AddSeSecurityNamePrivilege() {
+	if (!SetPrivilege(SE_SECURITY_NAME,1)) {
+		int err = GetLastError();
 		if (err != ERROR_SUCCESS) {
-			DbgPrint(L"  failed: Unable to lookup privilege value. error = %u\n",
-				err);
+			DbgPrint(L"  failed: Unable to adjust token privileges: %u\n", err);
 			return FALSE;
 		}
 	}
-
-	LUID_AND_ATTRIBUTES attr;
-	attr.Attributes = SE_PRIVILEGE_ENABLED;
-	attr.Luid = luid;
-
-	TOKEN_PRIVILEGES priv;
-	priv.PrivilegeCount = 1;
-	priv.Privileges[0] = attr;
-
-	if (!OpenProcessToken(GetCurrentProcess(),
-		TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &token)) {
-		err = GetLastError();
+	if (!SetPrivilege(SE_TAKE_OWNERSHIP_NAME, 1)) {
+		int err = GetLastError();
 		if (err != ERROR_SUCCESS) {
-			DbgPrint(L"  failed: Unable obtain process token. error = %u\n", err);
+			DbgPrint(L"  failed: Unable to adjust token privileges: %u\n", err);
 			return FALSE;
 		}
 	}
-
-	TOKEN_PRIVILEGES oldPriv;
-	DWORD retSize;
-	AdjustTokenPrivileges(token, FALSE, &priv, sizeof(TOKEN_PRIVILEGES), &oldPriv,
-		&retSize);
-	err = GetLastError();
-	if (err != ERROR_SUCCESS) {
-		DbgPrint(L"  failed: Unable to adjust token privileges: %u\n", err);
-		CloseHandle(token);
-		return FALSE;
-	}
-
-	BOOL privAlreadyPresent = FALSE;
-	for (unsigned int i = 0; i < oldPriv.PrivilegeCount; i++) {
-		if (oldPriv.Privileges[i].Luid.HighPart == luid.HighPart &&
-			oldPriv.Privileges[i].Luid.LowPart == luid.LowPart) {
-			privAlreadyPresent = TRUE;
-			break;
+	if (!SetPrivilege(SE_BACKUP_NAME, 1)) {
+		int err = GetLastError();
+		if (err != ERROR_SUCCESS) {
+			DbgPrint(L"  failed: Unable to adjust token privileges: %u\n", err);
+			return FALSE;
 		}
 	}
-	DbgPrint(privAlreadyPresent ? L"  success: privilege already present\n"
-		: L"  success: privilege added\n");
-	if (token)
-		CloseHandle(token);
+	if (!SetPrivilege(SE_RESTORE_NAME, 1)) {
+		int err = GetLastError();
+		if (err != ERROR_SUCCESS) {
+			DbgPrint(L"  failed: Unable to adjust token privileges: %u\n", err);
+			return FALSE;
+		}
+	}
 	return TRUE;
 }
 
@@ -207,7 +201,7 @@ static BOOL AddSeSecurityNamePrivilege() {
 
 
 JNIEXPORT jint JNICALL Java_net_decasdev_dokan_Dokan_mount
-(JNIEnv *env, jclass, jobject joptions, jobject joperations)
+(JNIEnv *env, jclass, jobject joptions, jobject joperations,jboolean debug)
 {
 	try {
 		if (jvm != NULL)
@@ -217,13 +211,24 @@ JNIEXPORT jint JNICALL Java_net_decasdev_dokan_Dokan_mount
 
 		InitMethodIDs(env);
 		g_UseStdErr = true;
-		g_DebugMode = true;
+		g_DebugMode = debug;
 		DOKAN_OPTIONS options;
 		ZeroMemory(&options, sizeof(DOKAN_OPTIONS));
 		options.Version = DOKAN_VERSION;
 		/* mountPoint */
 		jstring mountPoint = (jstring)env->GetObjectField(joptions, mountPointID);
 		jstring metaFilePath = (jstring)env->GetObjectField(joptions, metaFilePathID);
+		jstring unc = (jstring)env->GetObjectField(joptions, uncPathID);
+		if (unc != NULL) {
+			int ulen = env->GetStringLength(unc);
+			const jchar* uchars = env->GetStringChars(unc, NULL);
+			wchar_t* uwsz = new wchar_t[ulen + 1];
+			memcpy(uwsz, uchars, ulen * 2);
+			options.UNCName = uwsz;
+			uwsz[ulen] = 0;
+			options.UNCName = uwsz;
+			env->ReleaseStringChars(unc, uchars);
+		}
 		int len = env->GetStringLength(mountPoint);
 		const jchar* chars = env->GetStringChars(mountPoint, NULL);
 		wchar_t* wsz = new wchar_t[len + 1];
@@ -323,6 +328,8 @@ NTSTATUS DOKAN_CALLBACK OnCreateFile(
 		if (result == 0) {
 			DokanFileInfo->Context = handle;
 		}
+		if (jfileName != NULL) env->DeleteLocalRef(jfileName);
+		if (jdokanFileInfo != NULL) env->DeleteLocalRef(jdokanFileInfo);
 		DbgPrint(L"[OnCreateFile] result = %d, handle = %d\n", result, handle);
 	} catch(const char* msg) {
 		DbgPrint(L"[OnCreateFile] %s\n", msg);
@@ -337,15 +344,15 @@ onGetFileSecurity(
 	LPCWSTR FileName, PSECURITY_INFORMATION SecurityInformation,
 	PSECURITY_DESCRIPTOR SecurityDescriptor, ULONG BufferLength,
 	PULONG LengthNeeded, PDOKAN_FILE_INFO DokanFileInfo) {
-
+	DbgPrint(L"0GetFileSecurity");
 	WCHAR	filePath[MAX_PATH];
 
 
 	UNREFERENCED_PARAMETER(DokanFileInfo);
-
+	DbgPrint(L"1GetFileSecurity %s\n", filePath);
 	GetFilePath(filePath, MAX_PATH, FileName);
 
-	DbgPrint(L"GetFileSecurity %s\n", filePath);
+	DbgPrint(L"2GetFileSecurity %s\n", filePath);
 	HANDLE handle = CreateFile(
 		filePath,
 		READ_CONTROL | (((*SecurityInformation & SACL_SECURITY_INFORMATION) ||
@@ -394,22 +401,13 @@ PSECURITY_DESCRIPTOR	SecurityDescriptor,
 ULONG				SecurityDescriptorLength,
 PDOKAN_FILE_INFO	DokanFileInfo)
 {
-	HANDLE	handle;
 	WCHAR	filePath[MAX_PATH];
-
+	DbgPrint(L"SetFileSecurity\n");
 	UNREFERENCED_PARAMETER(SecurityDescriptorLength);
 
 	GetFilePath(filePath, MAX_PATH, FileName);
-
 	DbgPrint(L"SetFileSecurity %s\n", filePath);
-
-	handle = (HANDLE)DokanFileInfo->Context;
-	if (!handle || handle == INVALID_HANDLE_VALUE) {
-		DbgPrint(L"\tinvalid handle\n\n");
-		return STATUS_INVALID_HANDLE;
-	}
-
-	if (!SetUserObjectSecurity(handle, SecurityInformation, SecurityDescriptor)) {
+	if (!SetFileSecurity(filePath, (SECURITY_INFORMATION)SecurityInformation, SecurityDescriptor)) {
 		int error = GetLastError();
 		DbgPrint(L"  SetUserObjectSecurity failed: %d\n", error);
 		return ToNtStatus(error);
@@ -431,9 +429,12 @@ void DOKAN_CALLBACK OnCleanup(
 		
 		env->CallVoidMethod(gOperations, onCleanupID, 
 			jfileName, jdokanFileInfo);
+		GetOperationResult(env);
 		if (DokanFileInfo->Context) {
 			DokanFileInfo->Context = 0;
 		}
+		if (jfileName != NULL) env->DeleteLocalRef(jfileName);
+		if (jdokanFileInfo != NULL) env->DeleteLocalRef(jdokanFileInfo);
 	} catch(const char* msg) {
 		DbgPrint(L"[OnCleanup] %s\n", msg);
 	}
@@ -448,16 +449,18 @@ void DOKAN_CALLBACK OnCloseFile(
 	DbgPrint(L"[OnCloseFile] FileName = %s\n", FileName);
 	JNIEnv* env = get_env();
 	//jvm->AttachCurrentThread((void **)&env, NULL);
-
 	try {
 		jstring jfileName = ToJavaString(env, FileName);
 		jobject jdokanFileInfo = ToDokanFileInfoJavaObject(env, DokanFileInfo);
 		
 		env->CallVoidMethod(gOperations, onCloseFileID, 
 			jfileName, jdokanFileInfo);
+		GetOperationResult(env);
 		if (DokanFileInfo->Context) {
 			DokanFileInfo->Context = 0;
 		}
+		if (jfileName != NULL) env->DeleteLocalRef(jfileName);
+		if (jdokanFileInfo != NULL) env->DeleteLocalRef(jdokanFileInfo);
 	} catch(const char* msg) {
 		DbgPrint(L"[OnCloseFile] %s\n", msg);
 	}
@@ -482,10 +485,10 @@ NTSTATUS DOKAN_CALLBACK OnReadFile(
 	try {
 		jstring jfileName = ToJavaString(env, FileName);
 		jobject jdokanFileInfo = ToDokanFileInfoJavaObject(env, DokanFileInfo);
-		
+		jobject jRb = env->NewDirectByteBuffer(Buffer, NumberOfBytesToRead);
 		DWORD readed = env->CallIntMethod(gOperations, onReadFileID, 
 			jfileName, 
-			env->NewDirectByteBuffer(Buffer, NumberOfBytesToRead),
+			jRb,
 			Offset,
 			jdokanFileInfo);
 		if (NumberOfBytesRead)
@@ -495,6 +498,9 @@ NTSTATUS DOKAN_CALLBACK OnReadFile(
 		if(result != 0) {
 			DbgPrint(L"[OnReadFile] result = %d\n", result);
 		}
+		if (jfileName != NULL) env->DeleteLocalRef(jfileName);
+		if (jdokanFileInfo != NULL) env->DeleteLocalRef(jdokanFileInfo);
+		if (jRb != NULL) env->DeleteLocalRef(jRb);
 	} catch(const char* msg) {
 		DbgPrint(L"[OnReadFile] %s\n", msg);
 	}
@@ -520,7 +526,7 @@ NTSTATUS DOKAN_CALLBACK OnWriteFile(
 	try {
 		jstring jfileName = ToJavaString(env, FileName);
 		jobject jdokanFileInfo = ToDokanFileInfoJavaObject(env, DokanFileInfo);
-		
+		jobject jWb = env->NewDirectByteBuffer((LPVOID)Buffer, NumberOfBytesToWrite);
 		// Some one please modify here for the faster way !!
 		/*
 		LPVOID tmpBuffer = malloc(NumberOfBytesToWrite);
@@ -530,13 +536,16 @@ NTSTATUS DOKAN_CALLBACK OnWriteFile(
 		*/
 		DWORD written = env->CallIntMethod(gOperations, onWriteFileID, 
 			jfileName, 
-			env->NewDirectByteBuffer((LPVOID)Buffer, NumberOfBytesToWrite),
+			jWb,
 			Offset,
 			jdokanFileInfo);
 
 		if (NumberOfBytesWritten)
 			*NumberOfBytesWritten = written;
 		result = GetOperationResult(env);
+		if (jfileName != NULL) env->DeleteLocalRef(jfileName);
+		if (jdokanFileInfo != NULL) env->DeleteLocalRef(jdokanFileInfo);
+		if (jWb != NULL) env->DeleteLocalRef(jWb);
 		if(result != 0) {
 			DbgPrint(L"[OnWriteFile] ERROR result = %d\n", result);
 		} else {
@@ -566,6 +575,9 @@ NTSTATUS DOKAN_CALLBACK OnFlushFileBuffers(
 		env->CallVoidMethod(gOperations, onFlushFileBuffersID, 
 			jfileName, jdokanFileInfo);
 		result = GetOperationResult(env);
+		if (jfileName != NULL) env->DeleteLocalRef(jfileName);
+		if (jdokanFileInfo != NULL) env->DeleteLocalRef(jdokanFileInfo);
+		
 	} catch(const char* msg) {
 		DbgPrint(L"[OnFlushFileBuffers] %s\n", msg);
 	}
@@ -587,18 +599,23 @@ NTSTATUS DOKAN_CALLBACK OnGetFileInformation(
 	try {
 		jstring jfileName = ToJavaString(env, FileName);
 		jobject jdokanFileInfo = ToDokanFileInfoJavaObject(env, DokanFileInfo);
-		
 		jobject jobj = env->CallObjectMethod(gOperations, onGetFileInformationID, 
 			jfileName, jdokanFileInfo);
 		result = GetOperationResult(env);
 
 		if (result == 0) {
 			ToByHandleFileInfo(env, jobj, ByHandleFileInfo);
-			DbgPrint(L"[OnGetFileInformation] %d %d %d\n",
+			DbgPrint(L"[OnGetFileInformation] info= %d %d %d\n",
 				ByHandleFileInfo->dwFileAttributes,
 				ByHandleFileInfo->nFileSizeHigh,
 				ByHandleFileInfo->nFileSizeLow);
 		}
+		else {
+			DbgPrint(L"[OnGetFileInformation] result=%d\n", result);
+		}
+		if (jfileName != NULL) env->DeleteLocalRef(jfileName);
+		if (jdokanFileInfo != NULL) env->DeleteLocalRef(jdokanFileInfo);
+		if (jobj != NULL) env->DeleteLocalRef(jobj);
 	} catch(const char* msg) {
 		DbgPrint(L"[OnGetFileInformation] %s\n", msg);
 	}
@@ -629,10 +646,16 @@ NTSTATUS DOKAN_CALLBACK OnFindFiles(
 		if (result == 0 && ary != NULL && pFillFindData != NULL) {
 			for(int i = 0; i < env->GetArrayLength(ary); i++) {
 				WIN32_FIND_DATAW win32FindData;
-				ToWin32FindData(env, env->GetObjectArrayElement(ary, i), &win32FindData);
+				jobject obj = env->GetObjectArrayElement(ary, i);
+				ToWin32FindData(env, obj, &win32FindData);
 				pFillFindData(&win32FindData, DokanFileInfo);
+				env->DeleteLocalRef(obj);
 			}
+
 		}
+		if (jpathName != NULL) env->DeleteLocalRef(jpathName);
+		if (jdokanFileInfo != NULL) env->DeleteLocalRef(jdokanFileInfo);
+		env->DeleteLocalRef(ary);
 	} catch(const char* msg) {
 		DbgPrint(L"[OnFindFiles] %s\n", msg);
 	}
@@ -666,10 +689,17 @@ NTSTATUS DOKAN_CALLBACK OnFindFilesWithPattern(
 		if (result == 0 && ary != NULL && pFillFindData != NULL) {
 			for(int i = 0; i < env->GetArrayLength(ary); i++) {
 				WIN32_FIND_DATAW win32FindData;
-				ToWin32FindData(env, env->GetObjectArrayElement(ary, i), &win32FindData);
+				jobject obj = env->GetObjectArrayElement(ary, i);
+				ToWin32FindData(env, obj, &win32FindData);
 				pFillFindData(&win32FindData, DokanFileInfo);
+
+				env->DeleteLocalRef(obj);
 			}
 		}
+		if(jpathName != NULL) env->DeleteLocalRef(jpathName);
+		if (jsearchPattern != NULL) env->DeleteLocalRef(jsearchPattern);
+		if (jdokanFileInfo != NULL) env->DeleteLocalRef(jdokanFileInfo);
+		env->DeleteLocalRef(ary);
 	} catch(const char* msg) {
 		DbgPrint(L"[OnFindFilesWithPattern] %s\n", msg);
 	}
@@ -694,6 +724,8 @@ NTSTATUS DOKAN_CALLBACK OnSetFileAttributes(
 		
 		env->CallVoidMethod(gOperations, onSetFileAttributesID, 
 			jfileName, FileAttributes, jdokanFileInfo);
+		if (jfileName != NULL) env->DeleteLocalRef(jfileName);
+		if (jdokanFileInfo != NULL) env->DeleteLocalRef(jdokanFileInfo);
 		result = GetOperationResult(env);
 	} catch(const char* msg) {
 		DbgPrint(L"[OnSetFileAttributes] %s\n", msg);
@@ -724,6 +756,8 @@ NTSTATUS DOKAN_CALLBACK OnSetFileTime(
 			FileTime2LongLong(LastAccessTime), FileTime2LongLong(LastWriteTime), 
 			jdokanFileInfo);
 		result = GetOperationResult(env);
+		if (jfileName != NULL) env->DeleteLocalRef(jfileName);
+		if (jdokanFileInfo != NULL) env->DeleteLocalRef(jdokanFileInfo);
 	} catch(const char* msg) {
 		DbgPrint(L"[OnSetFileTime] %s\n", msg);
 	}
@@ -748,6 +782,8 @@ NTSTATUS DOKAN_CALLBACK OnDeleteFile(
 		env->CallVoidMethod(gOperations, onDeleteFileID, 
 			jfileName, jdokanFileInfo);
 		result = GetOperationResult(env);
+		if (jfileName != NULL) env->DeleteLocalRef(jfileName);
+		if (jdokanFileInfo != NULL) env->DeleteLocalRef(jdokanFileInfo);
 	} catch(const char* msg) {
 		DbgPrint(L"[OnDeleteFile] %s\n", msg);
 	}
@@ -772,6 +808,8 @@ NTSTATUS DOKAN_CALLBACK OnDeleteDirectory(
 		env->CallVoidMethod(gOperations, onDeleteDirectoryID, 
 			jfileName, jdokanFileInfo);
 		result = GetOperationResult(env);
+		if (jfileName != NULL) env->DeleteLocalRef(jfileName);
+		if (jdokanFileInfo != NULL) env->DeleteLocalRef(jdokanFileInfo);
 	} catch(const char* msg) {
 		DbgPrint(L"[OnDeleteDirectory] %s\n", msg);
 	}
@@ -799,6 +837,9 @@ NTSTATUS DOKAN_CALLBACK OnMoveFile(
 		env->CallVoidMethod(gOperations, onMoveFileID, 
 			jExistingFileName, jNewFileName, ReplaceExisiting, jdokanFileInfo);
 		result = GetOperationResult(env);
+		if (jExistingFileName != NULL) env->DeleteLocalRef(jExistingFileName);
+		if (jdokanFileInfo != NULL) env->DeleteLocalRef(jdokanFileInfo);
+		if (jNewFileName != NULL) env->DeleteLocalRef(jNewFileName);
 	} catch(const char* msg) {
 		DbgPrint(L"[OnMoveFile] %s\n", msg);
 	}
@@ -824,6 +865,8 @@ NTSTATUS DOKAN_CALLBACK OnSetEndOfFile(
 		env->CallVoidMethod(gOperations, onSetEndOfFileID, 
 			jfileName, Length, jdokanFileInfo);
 		result = GetOperationResult(env);
+		if (jfileName != NULL) env->DeleteLocalRef(jfileName);
+		if (jdokanFileInfo != NULL) env->DeleteLocalRef(jdokanFileInfo);
 	} catch(const char* msg) {
 		DbgPrint(L"[OnSetEndOfFile] %s\n", msg);
 	}
@@ -850,6 +893,8 @@ NTSTATUS DOKAN_CALLBACK OnLockFile(
 		env->CallVoidMethod(gOperations, onLockFileID, 
 			jfileName, ByteOffset, Length, jdokanFileInfo);
 		result = GetOperationResult(env);
+		if (jfileName != NULL) env->DeleteLocalRef(jfileName);
+		if (jdokanFileInfo != NULL) env->DeleteLocalRef(jdokanFileInfo);
 	} catch(const char* msg) {
 		DbgPrint(L"[OnLockFile] %s\n", msg);
 	}
@@ -876,6 +921,8 @@ NTSTATUS DOKAN_CALLBACK OnUnlockFile(
 		env->CallVoidMethod(gOperations, onUnlockFileID, 
 			jfileName, ByteOffset, Length, jdokanFileInfo);
 		result = GetOperationResult(env);
+		if (jfileName != NULL) env->DeleteLocalRef(jfileName);
+		if (jdokanFileInfo != NULL) env->DeleteLocalRef(jdokanFileInfo);
 	} catch(const char* msg) {
 		DbgPrint(L"[OnUnlockFile] %s\n", msg);
 	}
@@ -914,6 +961,8 @@ NTSTATUS DOKAN_CALLBACK OnGetDiskFreeSpace(
 			*TotalNumberOfBytes = env->GetLongField(jdiskFreeSpace, totalNumberOfBytesID);
 		if (TotalNumberOfFreeBytes)
 			*TotalNumberOfFreeBytes = env->GetLongField(jdiskFreeSpace, totalNumberOfFreeBytesID);
+		if (jdokanFileInfo != NULL) env->DeleteLocalRef(jdokanFileInfo);
+		if (jdiskFreeSpace != NULL) env->DeleteLocalRef(jdiskFreeSpace);
 	} catch(const char* msg) {
 		DbgPrint(L"[OnGetDiskFreeSpace] %s\n", msg);
 	}
@@ -956,6 +1005,9 @@ NTSTATUS DOKAN_CALLBACK OnGetVolumeInformation(
 		// VolumeName, FileSystemName
 		CopyStringField(env, jvolumeInfo, volumeNameID, VolumeNameBuffer, VolumeNameSize);
 		CopyStringField(env, jvolumeInfo, fileSystemNameID, FileSystemNameBuffer, FileSystemNameSize);
+		if (jvolumeName != NULL) env->DeleteLocalRef(jvolumeName);
+		if (jdokanFileInfo != NULL) env->DeleteLocalRef(jdokanFileInfo);
+		if (jvolumeInfo != NULL) env->DeleteLocalRef(jvolumeInfo);
 	} catch(const char* msg) {
 		DbgPrint(L"[OnGetVolumeInformation] %s\n", msg);
 	}
@@ -978,6 +1030,7 @@ NTSTATUS DOKAN_CALLBACK OnUnmount(
 		
 		env->CallVoidMethod(gOperations, onUnmountID, jdokanFileInfo);
 		result = GetOperationResult(env);
+		if (jdokanFileInfo != NULL) env->DeleteLocalRef(jdokanFileInfo);
 	} catch(const char* msg) {
 		DbgPrint(L"[OnUnmount] %s\n", msg);
 	}
@@ -1071,12 +1124,23 @@ JNIEXPORT jint JNICALL Java_net_decasdev_dokan_Dokan_getDriverVersion
 JNIEXPORT jboolean JNICALL Java_net_decasdev_dokan_Dokan_resetTimeout(JNIEnv *env,jclass,
 	jlong				timeout,	// timeout in millisecond
 	jobject jfileinfo ) {
+	DbgPrint(L"[resetTimeout]" );
+	try {
 		DOKAN_FILE_INFO dokanFileInfo;
+		DbgPrint(L"[1]\n");
 		ZeroMemory(&dokanFileInfo, sizeof(DOKAN_FILE_INFO));
+		DbgPrint(L"[2]\n");
 		dokanFileInfo.Context=env->GetLongField(jfileinfo, handle);
+		DbgPrint(L"[3]\n");
 		dokanFileInfo.ProcessId=env->GetIntField(jfileinfo, processId);
+		DbgPrint(L"[4]\n");
 		dokanFileInfo.DokanContext=env->GetLongField(jfileinfo, dokanContext);
+		DbgPrint(L"[5] info= %d %d %d\n", dokanFileInfo.Context, dokanFileInfo.ProcessId, dokanFileInfo.DokanContext);
 		return DokanResetTimeout((ULONG)timeout,&dokanFileInfo);
+	}
+	catch (const char* msg) {
+		DbgPrint(L"[resetTimeout] %s\n", msg);
+	}
 	}
 
 

@@ -25,6 +25,8 @@ with this program. If not, see <http://www.gnu.org/licenses/>.
 #include "Utils.h"
 #include "IDs.h"
 
+
+
 jstring ToJavaString(JNIEnv* env, PCWSTR str) throw(...)
 {
 	if (str == NULL)
@@ -43,8 +45,13 @@ void CopyStringField(JNIEnv* env, jobject jobj, jfieldID jfid, LPWSTR Buffer, DW
 		jsize copyCount = MIN(env->GetStringLength(jstr), (jsize)(Size - 1));
 		env->GetStringRegion(jstr, 0, copyCount, (jchar*)Buffer);
 		Buffer[Size - 1] = '\0';
+		env->DeleteLocalRef(jstr);
 	}
+	
+
 }
+
+
 
 int GetOperationResult(JNIEnv* env)
 {
@@ -55,6 +62,7 @@ int GetOperationResult(JNIEnv* env)
 	jthrowable t = env->ExceptionOccurred();
 	if (env->IsInstanceOf(t, dokanOperationExceptionClass)) {
 		result = env->GetIntField(t, errorCodeID);
+		//DbgPrint(L"[GetOperationResult] DokanOperationException. ErrorCode = %d\n", result);
 		LOG(L"[GetOperationResult] DokanOperationException. ErrorCode = %d\n", result);
 	} else {
 		// TODO More detailed information !!

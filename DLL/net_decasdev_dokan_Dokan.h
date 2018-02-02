@@ -45,7 +45,7 @@ extern "C" {
  * Signature: (Lnet/decasdev/dokan/DokanOptions;Lnet/decasdev/dokan/DokanOperations;)I
  */
 JNIEXPORT jint JNICALL Java_net_decasdev_dokan_Dokan_mount
-  (JNIEnv *, jclass, jobject, jobject);
+  (JNIEnv *, jclass, jobject, jobject,jboolean);
 
 ///*
 // * Class:     net_decasdev_dokan_Dokan

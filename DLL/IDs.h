@@ -34,6 +34,7 @@ extern jclass win32FindDataClass;
 
 //extern jfieldID driveLetterID;
 extern jfieldID mountPointID;
+extern jfieldID uncPathID;
 extern jfieldID metaFilePathID;
 extern jfieldID threadCountID;
 extern jfieldID optionsModeID;
